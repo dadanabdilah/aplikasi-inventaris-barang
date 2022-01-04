@@ -1,0 +1,526 @@
+#include <iostream>
+#include <array>
+#include <cstdlib>
+#include <fstream>
+#include <string>
+#include <regex>
+
+using namespace std;
+
+string TBLUSer = "inventaris_data-user.txt";
+string TBLBarang = "inventaris_data-barang.txt";
+
+struct Record {
+	string kode_barang;
+	string nama_barang;
+    int jumlah_barang;
+};
+
+struct UserRecord {
+	string username;
+	string password;
+    string level;
+};
+
+void mainHeader();
+void menu();
+void stafMenu();
+void addData(Record barang);
+string inReplace(string str_replace);
+string outReplace(string str_replace);
+void inputData();
+int dataSize(fstream &Database);
+void tableHeader();
+void readData();
+void sortData(int x);
+void saveDB(struct Record sortRecord[], int size);
+void searchData();
+void updateData();
+void deleteData();
+
+string login(string username, string password){
+    int size;
+    fstream Database;
+    size = dataSize(Database);
+    Database.open(TBLUSer);
+    UserRecord* array = new UserRecord[size];
+
+    mainHeader();
+    for(int i = 0; i<size; i++){
+        Database>>array[i].username;
+        Database>>array[i].password;
+        Database>>array[i].level;
+    }
+    Database.close();
+
+    username = regex_replace(username, regex("\\ "), "~");
+    password = regex_replace(password, regex("\\ "), "~");
+    int jmlFound = 0;
+    for(int i=0;i<size;i++) {
+        if(array[i].username == username && array[i].password == password) {
+            return array[i].level;
+            jmlFound++;
+        }
+    }
+    cout<<"\n\n";
+    if(jmlFound == 0){
+        return " ";
+    }
+}
+
+int main(){
+    awal:
+    string username, password;
+
+    mainHeader();
+    cout<<"\n Login Ke Aplikasi"<<endl;
+    //cin.ignore(1, '\n');
+    cout<<" Masukan Username\t: ";
+    getline(cin,username);
+    cout<<" Masukkan Password\t: ";
+    getline(cin, password);
+
+    if(login(username, password) == "Admin"){
+        system("cls");
+        mainHeader();
+        menu();
+    }else if(login(username, password) == "Staf"){
+        system("cls");
+        mainHeader();
+        stafMenu();
+    }else{
+        cout<<" Login gagal"<<endl;
+        goto awal;
+    }
+	return 0;
+}
+
+void mainHeader(){
+    cout<<"\n Nama\t: Dadan Abdilah \n NIM\t: 20210810091 \n Kelas\t: TINFC-2021-02 / TI 2021 B"<<endl;
+    cout<<" ==================================================="<<endl;
+    cout<<"              Program Inventaris Barang             "<<endl;
+    cout<<" ==================================================="<<endl;
+}
+
+void menu(){
+    menu:
+    cout<<" Pilih Jenis Operasi :"<<endl;
+    cout<<" 1. Tambah Data"<<endl;
+    cout<<" 2. Tampilkan Seluruh Data"<<endl;
+    cout<<" 3. Urutkan Data Berdasarkan Kode Barang"<<endl;
+    cout<<" 4. Urutkan Data Berdasarkan Jumlah Barang Terkecil"<<endl;
+    cout<<" 5. Mencari Data"<<endl;
+    cout<<" 6. Update Data"<<endl;
+    cout<<" 7. Hapus Data"<<endl;
+    cout<<" 8. Keluar"<<endl;
+    cout<<endl;
+
+    string jwb;
+    cout<<" Pilih Menu [1-8]: ";
+    cin>>jwb;
+
+    if (jwb == "1"){
+        inputData();
+        system("cls");
+        mainHeader();
+        goto menu;
+    } else if ( jwb=="2"){
+        readData();
+        goto menu;
+    } else if (jwb =="3" ) {
+        sortData(1);
+        goto menu;
+    } else if (jwb == "4"){
+        sortData(2);
+        goto menu;
+    } else if (jwb =="5") {
+        system("cls");
+        mainHeader();
+        searchData();
+        goto menu;
+    } else if (jwb == "6"){
+        updateData();
+        system("cls");
+        mainHeader();
+        goto menu;
+    } else if (jwb== "7") {
+        deleteData();
+        system("cls");
+        mainHeader();
+        cout<<"Penghapusan Data Sukses"<<endl;
+        goto menu;
+    } else if (jwb == "8") {
+        system("cls");
+        atexit;
+    } else {
+        system ("cls");
+        cout<<"\nInput Tidak Valid !!! \n"<<endl;
+        goto menu;
+    }
+}
+
+void stafMenu(){
+    menu:
+    cout<<" Pilih Jenis Operasi :"<<endl;
+    cout<<" 1. Tambah Data"<<endl;
+    cout<<" 2. Tampilkan Seluruh Data"<<endl;
+    cout<<" 3. Urutkan Data Berdasarkan Kode Barang"<<endl;
+    cout<<" 4. Urutkan Data Berdasarkan Jumlah Barang Terkecil"<<endl;
+    cout<<" 5. Mencari Data"<<endl;
+    cout<<" 6. Keluar"<<endl;
+    cout<<endl;
+
+    string jwb;
+    cout<<" Pilih Menu [1-8]: ";
+    cin>>jwb;
+
+    if (jwb == "1"){
+        inputData();
+        system("cls");
+        mainHeader();
+        goto menu;
+    } else if ( jwb=="2"){
+        readData();
+        goto menu;
+    } else if (jwb =="3" ) {
+        sortData(1);
+        goto menu;
+    } else if (jwb == "4"){
+        sortData(2);
+        goto menu;
+    } else if (jwb =="5") {
+        system("cls");
+        mainHeader();
+        searchData();
+        goto menu;
+    } else if (jwb == "6") {
+        system("cls");
+        atexit;
+    } else {
+        system ("cls");
+        cout<<"\nInput Tidak Valid !!! \n"<<endl;
+        goto menu;
+    }
+}
+
+string inReplace(string str_replace){
+    string data;
+    data = regex_replace(str_replace, regex("\\ "), "~");
+    return data;
+}
+
+string outReplace(string str_replace){
+    string data;
+    data = regex_replace(str_replace, regex("\\~"), " ");
+    return data;
+}
+
+void inputData() {
+    string kode_brg, nama_brg;
+    int jumlah_brg;
+    Record barang;
+
+    system("cls");
+    mainHeader();
+    cout<<"\n Input Data Barang"<<endl;
+
+    cin.ignore(1, '\n');
+    cout<<" Masukkan Kode Barang\t: ";
+    getline(cin,kode_brg);
+    cout<<" Masukkan Nama Barang\t: ";
+    getline(cin, nama_brg);
+    cout<<" Masukkan Jumlah Barang\t: ";
+    cin>>jumlah_brg;
+
+    barang.nama_barang = inReplace(nama_brg);
+    barang.kode_barang = kode_brg;
+    barang.jumlah_barang = jumlah_brg;
+    addData(barang);
+
+    cout<<endl;
+}
+
+void addData(Record barang){
+    fstream data;
+    data.open(TBLBarang, ios::binary);
+    data <<barang.kode_barang<<"   "<<barang.nama_barang<<"   "<<barang.jumlah_barang<<endl;
+    data.close();
+}
+
+int dataSize(fstream &Database) {
+    Record dataSize;
+    int size;
+
+    Database.open(TBLBarang);
+    while (getline(Database, dataSize.kode_barang))
+        size++;
+
+    Database.close();
+
+    return size ;
+}
+
+void readData() {
+    fstream Database;
+    int size;
+
+    size = dataSize(Database);
+
+    Database.open(TBLBarang);
+
+    Record* sortRecord = new Record[size];
+
+    for(int i = 0; i<size; i++){
+
+        Database>>sortRecord[i].kode_barang;
+        Database>>sortRecord[i].nama_barang;
+        Database>>sortRecord[i].jumlah_barang;
+    }
+
+    Database.close();
+
+    system("cls");
+    mainHeader();
+    cout<<"\n Menampilkan Semua Data "<<endl;
+    tableHeader();
+    for ( int i=0; i<size; i++) {\
+        cout<<" "<<sortRecord[i].kode_barang<<"\t\t"<<outReplace(sortRecord[i].nama_barang)<<"\t\t\t\t"<<sortRecord[i].jumlah_barang<<endl;
+    }
+    cout<<endl;
+}
+
+void tableHeader(){
+    cout<<" ============================================================================"<<endl;
+    cout<<" Kode Barang\t"<<"Nama Barang\t\t\t\t\t"<<"Jumlah Barang"<<endl;
+    cout<<" ============================================================================"<<endl;
+}
+
+void sortDesc(struct Record arr[], int n){
+    int i, j;
+    struct Record key;
+    for (i = 1; i < n; i++) {
+        key = arr[i];
+        j = i - 1;
+        while (j >= 0 && arr[j].kode_barang > key.kode_barang) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+            arr[j + 1] = key;
+    }
+}
+
+void sortQty(struct Record arr[], int n) {
+    int i, j;
+    struct Record key;
+    for (i = 1; i < n; i++) {
+        key = arr[i];
+        j = i - 1;
+        while (j >= 0 && arr[j].jumlah_barang > key.jumlah_barang) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+void sortData(int x) {
+    fstream Database;
+    int size;
+
+    size = dataSize(Database);
+
+    Database.open(TBLBarang);
+
+    Record* sortRecord = new Record[size];
+
+    for(int i = 0; i<size; i++){
+        Database>>sortRecord[i].kode_barang;
+        Database>>sortRecord[i].nama_barang;
+        Database>>sortRecord[i].jumlah_barang;
+    }
+
+    Database.close();
+
+    if (x == 1) {
+        sortDesc(sortRecord, size);
+        saveDB(sortRecord, size);
+    }
+    else if ( x== 2) {
+        sortQty(sortRecord, size);
+        saveDB(sortRecord, size);
+    }
+
+    system("cls");
+    mainHeader();
+    cout<<"\n Hasil Pengurutan Data : "<<endl;
+    tableHeader();
+    for ( int i=0; i<size; i++) {
+        cout<<" "<<sortRecord[i].kode_barang<<"\t\t"<<outReplace(sortRecord[i].nama_barang)<<"\t\t\t\t"<<sortRecord[i].jumlah_barang<<endl;
+    }
+
+    cout<<endl;
+}
+
+void saveDB(struct Record sortRecord[], int size) {
+
+    fstream Database;
+    Database.open(TBLBarang, ios::trunc | ios::out);
+
+    for (int i=0; i < size; i++){
+
+        Database<<sortRecord[i].kode_barang<<"    "<<sortRecord[i].nama_barang<<"   "<<sortRecord[i].jumlah_barang<<endl;
+    }
+
+    Database.close();
+}
+
+void printErr () {
+    system ("cls");
+    cout <<"\n\n Keyword Invalid / Data Tidak Ada\n\n"<<endl;
+}
+
+void printSearch (Record array) {
+    //system ("cls");
+    cout<<"\n Hasil Pencarian Data "<<endl;
+    tableHeader();
+    cout<<" "<< array.kode_barang<<"\t\t"<<outReplace(array.nama_barang)<<"\t\t\t\t"<<array.jumlah_barang<<endl;
+    cout<<endl;
+}
+
+void searchData () {
+    string keyword;
+    int size;
+
+    fstream Database;
+
+    size = dataSize(Database);
+
+    Database.open(TBLBarang);
+
+    Record* array = new Record[size];
+
+    for(int i = 0; i<size; i++){
+        Database>>array[i].kode_barang;
+        Database>>array[i].nama_barang;
+        Database>>array[i].jumlah_barang;
+    }
+
+    Database.close();
+    cout<<"\n Cari Barang"<<endl;
+    cout<<" Masukkan Nama Barang : ";
+    cin>>keyword;
+
+    cout<<"\n Hasil Pencarian Data"<<endl;
+    tableHeader();
+
+    keyword = regex_replace(keyword, regex("\\ "), "~");
+    int jmlFound = 0;
+    for(int i=0;i<size;i++) {
+        if(array[i].nama_barang.find(keyword) != string::npos) {
+            //printSearch(array[i]);
+            cout<<" "<< array[i].kode_barang<<"\t\t"<<outReplace(array[i].nama_barang)<<"\t\t\t\t"<<array[i].jumlah_barang<<endl;
+            jmlFound++;
+        }
+    }
+    cout<<"\n\n";
+    if(jmlFound == 0){
+        printErr();
+    }
+}
+
+void updateData() {
+    string keyword, kode_brg, nama_brg;
+    int jumlah_brg;
+    int size;
+
+    fstream Database;
+
+    size = dataSize(Database);
+
+    Database.open(TBLBarang);
+
+    Record* array = new Record[size];
+
+    for(int i = 0; i<size; i++){
+        Database>>array[i].kode_barang;
+        Database>>array[i].nama_barang;
+        Database>>array[i].jumlah_barang;
+    }
+
+    Database.close();
+
+    readData();
+
+    cout<<" Masukkan Kode Barang Untuk Update Data : ";
+    cin>>keyword;
+
+    for(int i=0;i<size;i++) {
+        if(array[i].kode_barang == keyword) {
+            // panggil fungsi header tabel
+            tableHeader();
+            cout<<" "<<array[i].kode_barang<<"\t\t"<<outReplace(array[i].nama_barang)<<"\t\t\t\t"<<array[i].jumlah_barang<<endl;
+
+            cout<<"\n Masukkan Data Baru : "<<endl;
+            cin.ignore(1, '\n');
+            cout<<" Masukkan Kode Barang\t: ";
+            getline(cin,kode_brg);
+            cout<<" Masukkan Nama Barang\t: ";
+            getline(cin, nama_brg);
+            cout<<" Masukkan Jumlah Barang\t: ";
+            cin>>jumlah_brg;
+
+            array[i].nama_barang = inReplace(nama_brg);
+            array[i].kode_barang = kode_brg;
+            array[i].jumlah_barang = jumlah_brg;
+
+            saveDB(array, size);
+
+            cout<<endl;
+            return;
+        }
+    }
+    printErr();
+}
+
+void deleteData () {
+    string keyword, kode_brg, nama_brg;
+    int jumlah_brg;
+    int size;
+
+    fstream Database;
+
+    size = dataSize(Database);
+
+    Database.open(TBLBarang);
+
+    Record* array = new Record[size];
+
+    for(int i = 0; i<size; i++){
+        Database>>array[i].kode_barang;
+        Database>>array[i].nama_barang;
+        Database>>array[i].jumlah_barang;
+    }
+
+    Database.close();
+
+    readData();
+
+    cout<<" Masukkan Kode Barang Yang Akan Dihapus : ";
+    cin>>keyword;
+
+    for(int i=0;i<size;i++) {
+        if(array[i].kode_barang == keyword) {
+            for(int j=i; j<size-1; j++) {
+                array[j].kode_barang = array[j+1].kode_barang;
+                array[j].nama_barang = array[j+1].nama_barang;
+                array[j].jumlah_barang = array[j+1].jumlah_barang;
+            }
+            size--;
+
+            saveDB(array, size);
+            return;
+        }
+    }
+    printErr();
+}
+

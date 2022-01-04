@@ -1,0 +1,6 @@
+00001    Kursi   121212
+00002    Laptop~Lenovo   1000
+00003    Laptop~DELL   200
+00004    Coba~COba   100
+00005    Cobaaa~An   2121
+00006    Tester   23232
